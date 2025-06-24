@@ -157,3 +157,50 @@ func MVPCEncrypt_gk(plaintext string) (string, map[rune]rune, error) {
     if(err != nil) {return "", nil, err}
     return ciphertext, key, nil
 }
+
+
+/* The Caesar cipher (and subsequently ROTX ciphers) is(/are) possibly the most famous cipher(s) to exist. I chalk this up to the
+connection to Julius Caesar, and its ease of use for school children. The Caesar cipher takes an alphabet and rotates it by 3
+characters; this operation turns A into D, B into E, C into F, and so on. This was, and arguably still is, done via a cipherwheel,
+which consists of 2 wheels with each letter of the alphabet inscribed on the outter edge. To get a new cipheralphabet, just rotate
+one of the wheels by some number of times, and translate from top wheel into bottom. To decipher you'd set the same rotation, then
+read from the inner wheel to the outter
+
+The ROTX cipher is "Rotational X", and the Caesar cipher a specific ROTX variant (specifically ROT+3), where the wheel is
+incremented in a direction some amount of times
+
+Here's the example in the book:
+
+    Key:
+        ABCDEFGHIJKLMNOPQRSTUVWXYZ
+        DEFGHIJKLMNOPQRSTUVWXYZABC
+
+    Plaintext:
+        VENI, VIDI, VICI
+    Ciphertext:
+        YHQL YLGL YLFL
+*/
+
+func ROTX(text string, offset rune) (string, error) {
+    const ROMAN_WIDTH rune = ('Z' - 'A' + 1) 
+    var res string
+
+    if len(text) <= 0               {return "", errors.New("given empty string")}
+    if offset % ROMAN_WIDTH == 0    {return "", errors.New("given offset that would not meaningfully encrypt message (" + string(offset) + " % " + string(ROMAN_WIDTH) + " == 0)")}
+
+    for ; offset < 0; offset += ROMAN_WIDTH {}
+    for _, cur := range text {
+        if cur < 'A' || cur > 'Z' {continue}
+        res += string(((cur - 'A' + offset) % ROMAN_WIDTH) + 'A') 
+    }   
+
+    return res, nil
+}
+
+func CaesarEncrypt(text string) (string, error) {
+    return ROTX(text, 3)
+}
+
+func CaesarDecrypt(text string) (string, error) {
+    return ROTX(text, -3)
+}

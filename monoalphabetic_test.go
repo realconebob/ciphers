@@ -52,3 +52,34 @@ func TestMVPC(t *testing.T) {
 		t.Errorf("Got incorrect string from MVPCProcess decryption: %v %v (%v)", res4, generated_key, err)
 	}
 }
+
+func TestROTX(t *testing.T) {
+	const PLAINTEXT string 		= "VENI, VIDI, VICI"
+	const CUT_PLAINTEXT string	= "VENIVIDIVICI"
+	const CIPHERTEXT string 	= "YHQLYLGLYLFL"
+
+	res1, err := CaesarEncrypt(PLAINTEXT)
+	if res1 != CIPHERTEXT || err != nil {
+		t.Errorf("Got incorrect string from Caesar encryption: %v (%v)", res1, err)
+	}
+
+	res2, err := CaesarDecrypt(res1)
+	if res2 != CUT_PLAINTEXT || err != nil {
+		t.Errorf("Got incorrect string from Caesar decryption: %v (%v)", res2, err)
+	}
+
+	
+	const PT2 string = "SECONDMESSAGE"
+	const CT2 string = "GSQCBRASGGOUS"
+	const OFFSET rune = 14
+
+	res3, err := ROTX(PT2, OFFSET)
+	if res3 != CT2 || err != nil {
+		t.Errorf("Got incorrect string from ROTX encryption: %v (%v)", res3, err)
+	}
+
+	res4, err := ROTX(res3, -1 * OFFSET)
+	if res4 != PT2 || err != nil {
+		t.Errorf("Got incorrect string from ROTX decryption: %v (%v)", res4, err)
+	}
+}
