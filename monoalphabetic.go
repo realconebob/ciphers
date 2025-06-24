@@ -139,7 +139,7 @@ func MVPCEncrypt_gk(plaintext string) (string, map[rune]rune, error) {
 
     // Note: I'm not going to bother with cryptographically secure randomness as there's no point with a cipher so simple
 
-    var letters []rune = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    var letters []rune = []rune(ROMANALPHA)
     var lp [2]rune
     for ; len(letters) > 0; {
         for i, randi := 0, 0; i < 2; i++ {
@@ -203,4 +203,38 @@ func CaesarEncrypt(text string) (string, error) {
 
 func CaesarDecrypt(text string) (string, error) {
     return ROTX(text, -3)
+}
+
+
+/* The Simple Keyphrase cipher is the first cipher to meaningfully stump cryptanalysts for any real period of time, and remains
+quite simple on top of that. The problem with the ROTX cipher and its variants is that they have a very small keyspace. There are
+only 26 possible cipher alphabets when using ROTX, which means it's trivial to crack any ciphertext "protected" by it. You don't
+even need to check the entire text, just a few starting words to see if that cipheralphabet is making coherent results. With the
+keyphrase cipher, the number of possible cipher alphabets expands to 26!, or 4.0329146113 * 10^26. This number of combinations is
+simply too numerous for anyone, even a team of people, to run through, and because frequency analysis wasn't a widely known thing
+this cipher remained strong for a long time
+
+To use this cipher, simply come up with a keyphrase, remove any duplicate letters, fill in the rest of the alphabet, and substitute
+plaintext letters accordingly. Here's the book's example:
+
+    Keyphrase:
+        Julius Caesar
+
+    Fixed Keyphrase: 
+        JULISCAER
+
+    Full Cipheralphabet:
+        JULISCAERTVWXYZBDFGHKMNOPQ
+*/
+
+func KeyphraseProcess(text, keyphrase string) (string, error) {
+    if len(text) <= 0 || len(keyphrase) <= 0 {return "", errors.New("given empty string")}
+    var key map[rune]rune = make(map[rune]rune, 26)
+
+
+
+    // Process the keymap
+    res, err := MVPCProcess(text, key)
+    if len(res) <= 0 || err != nil {return "", err}
+    return res, nil
 }

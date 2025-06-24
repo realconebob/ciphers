@@ -68,7 +68,7 @@ func TestROTX(t *testing.T) {
 		t.Errorf("Got incorrect string from Caesar decryption: %v (%v)", res2, err)
 	}
 
-	
+
 	const PT2 string = "SECONDMESSAGE"
 	const CT2 string = "GSQCBRASGGOUS"
 	const OFFSET rune = 14

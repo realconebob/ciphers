@@ -82,7 +82,7 @@ func VigenereDecrypt(ciphertext, keytext string) (string, error) {
 
     for i, inter := 0, rune(0); i < len(ciphertext); i++ {
         inter = ([]rune(ciphertext)[i] - 'A') - ([]rune(keytext)[i%len(keytext)] - 'A') - 1
-        if inter < 0 {inter += 26}
+        if inter < 0 {inter += rune(ROMANWIDTH)}
         res += string(inter + 'A')
     }
 
