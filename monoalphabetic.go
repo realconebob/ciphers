@@ -22,6 +22,8 @@ package ciphers
 import (
     "strings"
     "errors"
+    "math/rand"
+    "slices"
 )
 
 /* The "Rail Fence" Cipher is a simple transposition cipher, meaning it simply rearranges the order of the letters contained in the
@@ -93,4 +95,65 @@ func RailfenceDecrypt(ciphertext string) (string, error) {
     }
 
     return res, nil
+}
+
+
+/* The Mlecchita-vikalpa Pairing Cipher is a simple substitution cipher where 2 letters of an alphabet are paired. This pair is then
+used as the "key" for encryption and decryption. To encrypt a piece of plaintext, take letter and map it to its pair. This is
+highlighted with an example on page 9:
+
+    Key:    ADHIKMORSUWYZ
+            VXBGJCQLNEFPT
+
+    Plaintext:
+        Meet at midnight
+    Ciphertext:
+        CUUZ VZ CGXSGIBZ
+
+    To decipher, repeat the mapping process with the ciphertext
+*/
+
+func MVPCProcess(text string, key map[rune]rune) (string, error) {
+    if len(text) <= 0 || len(key) <= 0 {return "", errors.New("given an empty string")}
+
+    var ciphertext string
+    var mres rune
+
+    for _, cur := range text {
+        mres = key[cur]
+        if(mres == 0) {return "", errors.New("character \"" + string(cur) + "\" does not exist in key")}
+
+        ciphertext += string(mres)
+    }
+
+    return ciphertext, nil
+}
+
+func MVPCEncrypt_gk(plaintext string) (string, map[rune]rune, error) {
+    var key map[rune]rune = make(map[rune]rune, 26)
+
+    // Populate key
+        // Get 2 letters at random
+        // Create the pairing 
+        // Repeat until all letters are consumed
+
+    // Note: I'm not going to bother with cryptographically secure randomness as there's no point with a cipher so simple
+
+    var letters []rune = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    var lp [2]rune
+    for ; len(letters) > 0; {
+        for i, randi := 0, 0; i < 2; i++ {
+            randi = rand.Intn(len(letters))
+            lp[i] = letters[randi]
+            letters = slices.Delete(letters, randi, randi + 1)
+        }
+        // Doing it like this means I'm not dealing with (literally) random oob panics
+
+        key[lp[0]] = lp[1]
+        key[lp[1]] = lp[0]
+    }
+
+    ciphertext, err := MVPCProcess(plaintext, key)
+    if(err != nil) {return "", nil, err}
+    return ciphertext, key, nil
 }
