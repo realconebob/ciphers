@@ -5,6 +5,7 @@ type Set[T comparable] interface {
 	remove(t T)
 	check(t T) bool
 	len() int
+	keys() []T
 }
 
 type GSet[T comparable] struct {
@@ -26,6 +27,21 @@ func (g *GSet[T]) check(t T) bool {
 
 func (g *GSet[T]) len() int {
 	return len(g.setimp)
+}
+
+func (g *GSet[T]) keys() []T {
+	var res []T = make([]T, 0, len(g.setimp))
+	for key, _ := range g.setimp {
+		res = append(res, key)
+	}
+
+	return res
+}
+
+func NewGSet[T comparable]() GSet[T] {
+	gset := new(GSet[T])
+	gset.setimp = make(map[T]bool)
+	return *gset
 }
 
 /* Man, go syntax is annoying. It took me ages to figure out the difference between 

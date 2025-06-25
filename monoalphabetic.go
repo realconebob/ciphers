@@ -113,7 +113,7 @@ highlighted with an example on page 9:
     To decipher, repeat the mapping process with the ciphertext
 */
 
-func MVPCProcess(text string, key map[rune]rune) (string, error) {
+func keymapProcess(text string, key map[rune]rune) (string, error) {
     if len(text) <= 0 || len(key) <= 0 {return "", errors.New("given an empty string")}
 
     var ciphertext string
@@ -129,7 +129,7 @@ func MVPCProcess(text string, key map[rune]rune) (string, error) {
     return ciphertext, nil
 }
 
-func MVPCEncrypt_gk(plaintext string) (string, map[rune]rune, error) {
+func MVPCEncrypt(plaintext string) (string, map[rune]rune, error) {
     var key map[rune]rune = make(map[rune]rune, 26)
 
     // Populate key
@@ -153,11 +153,14 @@ func MVPCEncrypt_gk(plaintext string) (string, map[rune]rune, error) {
         key[lp[1]] = lp[0]
     }
 
-    ciphertext, err := MVPCProcess(plaintext, key)
+    ciphertext, err := keymapProcess(plaintext, key)
     if(err != nil) {return "", nil, err}
     return ciphertext, key, nil
 }
 
+func MVPCDecrypt(ciphertext string, key map[rune]rune) (string, error) {
+    return keymapProcess(ciphertext, key)
+}
 
 /* The Caesar cipher (and subsequently ROTX ciphers) is(/are) possibly the most famous cipher(s) to exist. I chalk this up to the
 connection to Julius Caesar, and its ease of use for school children. The Caesar cipher takes an alphabet and rotates it by 3
@@ -227,14 +230,53 @@ plaintext letters accordingly. Here's the book's example:
         JULISCAERTVWXYZBDFGHKMNOPQ
 */
 
-func KeyphraseProcess(text, keyphrase string) (string, error) {
+func keyphraseProcess(text, keyphrase string, mode bool) (string, error) {
     if len(text) <= 0 || len(keyphrase) <= 0 {return "", errors.New("given empty string")}
     var key map[rune]rune = make(map[rune]rune, 26)
+    var set GSet[rune] = NewGSet[rune]()
 
+    // The last element of keyphrase is, or rather contains, the index of where the romanalpha slice should start
+        // Ex: last letter is 'R', 'R' - 'A' is the index of 'R' in ROMANALPHA
+    var kpstr []rune = []rune(keyphrase + ROMANALPHA[[]rune(keyphrase)[len(keyphrase) - 1] - 'A' + 1:] + ROMANALPHA[:[]rune(keyphrase)[len(keyphrase) - 1] - 'A'])
 
+    // For each letter in the alphabet:
+        // Check to see if the letter has already been mapped
+            // If not, map the letter and continue
+            // If so, move to the next letter in the mapping
+                // If keyphrase has been consumed, continue with the rest of the alphabet from the end of the phrase
 
-    // Process the keymap
-    res, err := MVPCProcess(text, key)
-    if len(res) <= 0 || err != nil {return "", err}
+    for ind := 0; len(kpstr) > 0; {
+        if !set.check(kpstr[0]) {
+            set.add(kpstr[0])
+            key[[]rune(ROMANALPHA)[ind]] = kpstr[0]
+            ind++
+        }
+
+        kpstr = slices.Delete(kpstr, 0, 1)
+    }
+
+    // (Decryption) Invert the key map so that the current ABCD... -> XXXX... map becomes XXXX.... -> ABCD...
+    if mode {
+        temp := make(map[rune]rune, 26)
+        for k, v := range key {
+            temp[v] = k
+        }
+        key = temp
+    }
+
+    // Process data
+    res, err := keymapProcess(text, key)
+    if len(res) <= 0 || err != nil {
+        return "", errors.New("could not process text")
+    }
+
     return res, nil
+}
+
+func KeyphraseEncrypt(text, keyphrase string) (string, error) {
+    return keyphraseProcess(text, keyphrase, false)
+}
+
+func KeyphraseDecrypt(text, keyphrase string) (string, error) {
+    return keyphraseProcess(text, keyphrase, true)
 }
