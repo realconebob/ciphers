@@ -126,7 +126,7 @@ func Test_stripnonalpha(t *testing.T) {
 }
 
 func TestCharacterFrequency(t *testing.T) {
-	const EPSILON float64 = 0.01
+	const EPSILON float64 = 0.01 // Equivalent to 1%, so later tests are checking that the generated value and my manual value are within 1% of each other
 	const SAMPLETEXT string = "" +
 		"AND ONE BY ONE DROPPED THE REVELLERS IN THE BLOOD-BEDEWED HALLS OF THEIR REVEL, AND DIED EACH IN THE DESPAIRING POSTURE" + 
 		"OF HIS FALL. AND THE LIFE OF THE EBONY CLOCK WENT OUT WITH THAT OF THE LAST OF THE GAY. AND THE FLAMES OF THE TRIPODS " + 
@@ -186,9 +186,11 @@ func TestCharacterFrequency(t *testing.T) {
 }
 
 func TestHomophonic(t *testing.T) {
-	const PLAINTEXT string = "This is encrypted via (outdated) military encryption"
+	// A fun quirk of the homophonic mapping system is that you can put anything in the plaintext box and it'll just work. 
+	// No need to strip anything or do input sanitization like other functions
+	const PLAINTEXT string = "This is quite literally protected by (outdated) military strength encryption"
 
-	res1, key1, err := HomophonicEncrypt(PLAINTEXT)
+	res1, key1, err := HomophonicEncrypt(PLAINTEXT, 1000)
 	if len(res1) <= 0 || len(key1) <= 0 || err != nil {
 		t.Errorf("Got incorrect string from Homophonic encryption: %v %v (%v)", res1, key1, err)
 	}

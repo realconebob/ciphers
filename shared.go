@@ -37,7 +37,7 @@ func (g *GSet[T]) len() int {
 }
 func (g *GSet[T]) keys() []T {
 	var res []T = make([]T, 0, len(g.setimp))
-	for key, _ := range g.setimp {
+	for key := range g.setimp {
 		res = append(res, key)
 	}
 

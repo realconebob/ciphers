@@ -22,6 +22,7 @@ package ciphers
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"slices"
 	"strings"
@@ -328,13 +329,11 @@ func keyFreq[K comparable](keylist []K) (map[K]float64, error) {
     if len(keylist) <= 0 {return nil, errors.New("given empty keylist")}
     var res map[K]float64 = make(map[K]float64)
 
-    var total int = 0
     for _, key := range keylist {
         res[key] += 1
-        total++
     }
     for key := range res {
-        res[key] /= float64(total)
+        res[key] /= float64(len(keylist) /* brain moment */)
     }
 
     return res, nil
@@ -345,18 +344,59 @@ func CharacterFrequency(text string) (map[rune]float64, error) {
     return keyFreq([]rune(text))
 }
 
-func HomophonicEncrypt(plaintext string) (string, map[string]rune, error) {
+// Set the symbol range to something higher than you think you'll need. Might take a long time to generate the symbols otherwise
+func HomophonicEncrypt(plaintext string, symbolrange int) (string, map[string]rune, error) {
     if len(plaintext) <= 0  {return "", nil, errors.New("given empty string")}
     var ciphertext string
-    var key map[string]rune
+    var key map[string]rune = make(map[string]rune)
+    var internalkey map[rune][]string = make(map[rune][]string) 
+    var usedsymbols GSet[string] = NewGSet[string]()
+
+    // Populate the key
+        // Get the frequencies of each character in the plaintext
+        // Convert the frequencies into counts by multiplying by 100 and rounding to the next highest int
+        // Set count to 2 if less than 2
+        // Create `count` symbols, add them to the usedsymbols set, internal key array for that given symbol, and key
+
+    freqs, err := CharacterFrequency(plaintext)
+    if len(freqs) <= 0 || err != nil {return "", nil, err}
+
+    for char, freq := range freqs {
+        freq *= 100
+        freq = math.Ceil(freq)
+        if freq < 2 {freq = 2}
+
+        for i := 0; i < int(freq); i++ {
+            // Get a new, unused symbol
+            symbol := fmt.Sprint(rand.Intn(symbolrange + 1))
+            for ; usedsymbols.check(symbol); symbol = fmt.Sprint(rand.Intn(symbolrange + 1)) {}
+
+            // Add symbol to keys and set
+            internalkey[char] = append(internalkey[char], symbol)
+            key[symbol] = char
+            usedsymbols.add(symbol)
+        }
+    }
+
+    // Populate the ciphertext
+        // For each letter in the ciphertext, get the array of possible symbols via the internal key
+        // Pick a random symbol from the array
+        // Append it to the ciphertext
+
+    for _, cur := range plaintext {
+        psymbols := internalkey[cur]
+        choice := rand.Intn(len(psymbols))
+        ciphertext += psymbols[choice] + " "
+    }
+    ciphertext = string(slices.Delete([]rune(ciphertext), len(ciphertext) - 1, len(ciphertext)))
 
     return ciphertext, key, nil
 }
 func HomophonicDecrypt(ciphertext string, key map[string]rune) (string, error) {
     if len(ciphertext) <= 0 {return "", errors.New("given empty string")} 
     if len(key) <= 0 {return "", errors.New("given empty map")} 
-    var plaintext string
 
-
-    return plaintext, nil
+    var temp []string = strings.Split(ciphertext, " ")
+    plaintext, err := automap(temp, key)
+    return string(plaintext), err
 }
