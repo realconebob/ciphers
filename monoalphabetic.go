@@ -20,11 +20,25 @@ Ciphers implemented in this file:
 package ciphers
 
 import (
-    "strings"
-    "errors"
-    "math/rand"
-    "slices"
+	"errors"
+	"fmt"
+	"math/rand"
+	"slices"
+	"strings"
 )
+
+func stripnonalpha(text string) (string, error) {
+    if len(text) <= 0 {return "", errors.New("given empty string")}
+    var res string
+
+    for _, cur := range text {
+        if(cur >= 'a' && cur <= 'z') {cur -= 'a' - 'A'}
+        if(cur < 'A' || cur > 'Z') {continue}
+        res += string(cur)
+    }
+
+    return res, nil
+}
 
 /* The "Rail Fence" Cipher is a simple transposition cipher, meaning it simply rearranges the order of the letters contained in the
 plaintext. Here is an example from The Code Book: (page 8)
@@ -113,20 +127,26 @@ highlighted with an example on page 9:
     To decipher, repeat the mapping process with the ciphertext
 */
 
+// I realized that I am going to be regularly mapping a set of things to some set of key values and that it would be easier to have a generic function for it than redoing it every time
+func automap[K comparable, V any](iterable []K, key map[K]V) ([]V, error) {
+    if len(iterable) <= 0 {return nil, errors.New("got empty slice")}
+    if len(key) <= 0 {return nil, errors.New("got empty key")}
+    var res []V
+
+    for _, cur := range iterable {
+        res = append(res, key[cur])
+    }
+
+    return res, nil
+}
+
 func keymapProcess(text string, key map[rune]rune) (string, error) {
     if len(text) <= 0 || len(key) <= 0 {return "", errors.New("given an empty string")}
 
-    var ciphertext string
-    var mres rune
+    inter, err := automap([]rune(text), key)
+    if len(inter) <= 0 || err != nil {return "", err}
 
-    for _, cur := range text {
-        mres = key[cur]
-        if(mres == 0) {return "", errors.New("character \"" + string(cur) + "\" does not exist in key")}
-
-        ciphertext += string(mres)
-    }
-
-    return ciphertext, nil
+    return string(inter), nil
 }
 
 func MVPCEncrypt(plaintext string) (string, map[rune]rune, error) {
@@ -185,16 +205,15 @@ Here's the example in the book:
 */
 
 func ROTX(text string, offset rune) (string, error) {
-    const ROMAN_WIDTH rune = ('Z' - 'A' + 1) 
+    if len(text) <= 0               {return "", errors.New("given empty string")}
+    if offset % rune(ROMANWIDTH) == 0    {return "", errors.New("given offset that would not meaningfully encrypt message (" + string(offset) + " % " + fmt.Sprintf("%d", ROMANWIDTH) + " == 0)")}
     var res string
 
-    if len(text) <= 0               {return "", errors.New("given empty string")}
-    if offset % ROMAN_WIDTH == 0    {return "", errors.New("given offset that would not meaningfully encrypt message (" + string(offset) + " % " + string(ROMAN_WIDTH) + " == 0)")}
 
-    for ; offset < 0; offset += ROMAN_WIDTH {}
+    for ; offset < 0; offset += rune(ROMANWIDTH) {}
     for _, cur := range text {
         if cur < 'A' || cur > 'Z' {continue}
-        res += string(((cur - 'A' + offset) % ROMAN_WIDTH) + 'A') 
+        res += string(((cur - 'A' + offset) % rune(ROMANWIDTH)) + 'A') 
     }   
 
     return res, nil
@@ -279,4 +298,65 @@ func KeyphraseEncrypt(text, keyphrase string) (string, error) {
 
 func KeyphraseDecrypt(text, keyphrase string) (string, error) {
     return keyphraseProcess(text, keyphrase, true)
+}
+
+
+/* Atbash is an interesting cipher due to it's origin, that being the Bible (old testament specifically). It's quite simple, as
+all it does is replace letters with their "opposites". A becomes Z, B becomes Y, C becomes X, and so on */
+
+func Atbash(text string) (string, error) {
+    if len(text) <= 0 {return "", errors.New("given empty string")}
+    var res string
+
+    for _, cur := range text {
+        res += string('Z' - cur + 'A')
+    }
+
+    return res, nil
+}
+
+/* The Homophonic Substitution Cipher was the military's solution to encryption in an age before the widespread adoption of the 
+Vigenere Cipher. Enciphering via Vigenere was considered too complicated / costly, but a straightforward substitution cipher was
+considered too weak, so cryptographers needed an intermediary option. They settled on the homophonic substitution cipher, a cipher
+where each letter of the language is represented by a number of symbols equivalent to its average usage. For example: the letter 'a'
+makes up about 8% of any large enough english text, so it is represented by at least 8 symbols as to make any individual 
+representing symbol only make up 1% of the text. This would theoretically render the text immune to basic frequency analysis, which
+it did make freq.an. harder, but did not meaningfully thwart it. Regardless, it remained effective for quite some time
+*/
+
+func keyFreq[K comparable](keylist []K) (map[K]float64, error) {
+    if len(keylist) <= 0 {return nil, errors.New("given empty keylist")}
+    var res map[K]float64 = make(map[K]float64)
+
+    var total int = 0
+    for _, key := range keylist {
+        res[key] += 1
+        total++
+    }
+    for key := range res {
+        res[key] /= float64(total)
+    }
+
+    return res, nil
+}
+
+func CharacterFrequency(text string) (map[rune]float64, error) {
+    if len(text) <= 0 {return nil, errors.New("got empty string")}
+    return keyFreq([]rune(text))
+}
+
+func HomophonicEncrypt(plaintext string) (string, map[string]rune, error) {
+    if len(plaintext) <= 0  {return "", nil, errors.New("given empty string")}
+    var ciphertext string
+    var key map[string]rune
+
+    return ciphertext, key, nil
+}
+func HomophonicDecrypt(ciphertext string, key map[string]rune) (string, error) {
+    if len(ciphertext) <= 0 {return "", errors.New("given empty string")} 
+    if len(key) <= 0 {return "", errors.New("given empty map")} 
+    var plaintext string
+
+
+    return plaintext, nil
 }

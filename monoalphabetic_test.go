@@ -99,3 +99,102 @@ func TestKeyphrase(t *testing.T) {
 		t.Errorf("Got incorrect string from Keyphrase decryption: %v (%v)", res2, err)
 	}
 }
+
+func TestAtbash(t *testing.T) {
+	const PLAINTEXT string		= "SOILOOKEDANDSAWAWHITEHORSE"
+	const CIPHERTEXT string		= "HLROLLPVWZMWHZDZDSRGVSLIHV"
+
+	res1, err := Atbash(PLAINTEXT)
+	if res1 != CIPHERTEXT || err != nil {
+		t.Errorf("Got incorrect string from Atbash encryption: %v {%v}", res1, err)
+	}
+
+	res2, err := Atbash(res1)
+	if res2 != PLAINTEXT || err != nil {
+		t.Errorf("Got incorrect string from Atbash decryption: %v {%v}", res2, err)
+	}
+}
+
+func Test_stripnonalpha(t *testing.T) {
+	const UNSTRIPPED string = "This is a string!"
+	const STRIPPED string	= "THISISASTRING"
+
+	res, err := stripnonalpha(UNSTRIPPED)
+	if res != STRIPPED || err != nil {
+		t.Errorf("Got incorrect string from stripping function: %v (%v)", res, err)
+	}
+}
+
+func TestCharacterFrequency(t *testing.T) {
+	const EPSILON float64 = 0.01
+	const SAMPLETEXT string = "" +
+		"AND ONE BY ONE DROPPED THE REVELLERS IN THE BLOOD-BEDEWED HALLS OF THEIR REVEL, AND DIED EACH IN THE DESPAIRING POSTURE" + 
+		"OF HIS FALL. AND THE LIFE OF THE EBONY CLOCK WENT OUT WITH THAT OF THE LAST OF THE GAY. AND THE FLAMES OF THE TRIPODS " + 
+		"EXPIRED. AND DARKNESS AND DECAY AND THE RED DEATH HELD ILLIMITABLE DOMINION OVER ALL."
+	/* Excerpt from Edgar Allan Poe's "Masque of the Red Death"
+		Frequency analysis of all characters:
+		Char	#	%
+			E	39	12.11
+			D	23	7.14
+			T	21	6.52
+			A	20	6.21
+			O	19	5.9	
+			H	18	5.59
+			L	18	5.59
+			N	17	5.28
+			I	16	4.97
+			R	12	3.73
+			S	10	3.11
+			F	9	2.8
+			P	6	1.86
+			B	5	1.55
+			Y	4	1.24
+			C	4	1.24
+			V	3	0.93
+			W	3	0.93
+			.	3	0.93
+			M	3	0.93
+			G	2	0.62
+			U	2	0.62
+			K	2	0.62
+			-	1	0.31
+			,	1	0.31
+			X	1	0.31
+
+		E occurs 39 times and makes up 12.11% of the text. X occurs 1 time and makes up 0.31% of the text
+	*/
+
+	freqs, err := CharacterFrequency(SAMPLETEXT)
+	if len(freqs) <= 0 || err != nil {
+		t.Errorf("Couldn't generate character frequency: %v (%v)", freqs, err)
+	}
+
+	res := relativeError(freqs['E'], 0.1211)
+	if res > EPSILON {
+		t.Errorf("Expected frequency is out of range. Expected: %v, Got: %v", EPSILON, res)
+	}
+
+	res = relativeError(freqs['O'], 0.059)
+	if res > EPSILON {
+		t.Errorf("Expected frequency is out of range. Expected: %v, Got: %v", EPSILON, res)
+	}
+	
+	res = relativeError(freqs['X'], 0.0031)
+	if res > EPSILON {
+		t.Errorf("Expected frequency is out of range. Expected: %v, Got: %v", EPSILON, res)
+	}
+}
+
+func TestHomophonic(t *testing.T) {
+	const PLAINTEXT string = "This is encrypted via (outdated) military encryption"
+
+	res1, key1, err := HomophonicEncrypt(PLAINTEXT)
+	if len(res1) <= 0 || len(key1) <= 0 || err != nil {
+		t.Errorf("Got incorrect string from Homophonic encryption: %v %v (%v)", res1, key1, err)
+	}
+
+	res2, err := HomophonicDecrypt(res1, key1)
+	if res2 != PLAINTEXT || err != nil {
+		t.Errorf("Got incorrect string from Homophonic decryption: %v %v (%v)", res2, key1, err)
+	}
+}
