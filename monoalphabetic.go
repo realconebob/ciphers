@@ -33,8 +33,9 @@ func stripnonalpha(text string) (string, error) {
     var res string
 
     for _, cur := range text {
-        if(cur >= 'a' && cur <= 'z') {cur -= 'a' - 'A'}
-        if(cur < 'A' || cur > 'Z') {continue}
+        if(cur >= 'a' && cur <= 'z') {cur -= 'a' - 'A'
+        } else if(cur < 'A' || cur > 'Z') {continue}
+        
         res += string(cur)
     }
 
@@ -75,6 +76,8 @@ plaintext. Here is an example from The Code Book: (page 8)
 // Encipher a plaintext via the Rail Fence Transposition Cipher
 func RailfenceEncrypt(plaintext string) (string, error) {
     if(len(plaintext) <= 0) {return "", errors.New("given empty string")}
+    plaintext, err := stripnonalpha(plaintext)
+    if err != nil {return "", err}
 
     var halves [2]string
     var chars []string = strings.Split(plaintext, "")
@@ -89,6 +92,8 @@ func RailfenceEncrypt(plaintext string) (string, error) {
 // Decipher a ciphertext via the Rail Fence Transposition Cipher
 func RailfenceDecrypt(ciphertext string) (string, error) {
     if(len(ciphertext) <= 0) {return "", errors.New("given empty string")}
+    ciphertext, err := stripnonalpha(ciphertext)
+    if err != nil {return "", err}
 
     var res string
     var halves [2][]rune
@@ -128,19 +133,6 @@ highlighted with an example on page 9:
     To decipher, repeat the mapping process with the ciphertext
 */
 
-// I realized that I am going to be regularly mapping a set of things to some set of key values and that it would be easier to have a generic function for it than redoing it every time
-func automap[K comparable, V any](iterable []K, key map[K]V) ([]V, error) {
-    if len(iterable) <= 0 {return nil, errors.New("got empty slice")}
-    if len(key) <= 0 {return nil, errors.New("got empty key")}
-    var res []V
-
-    for _, cur := range iterable {
-        res = append(res, key[cur])
-    }
-
-    return res, nil
-}
-
 func keymapProcess(text string, key map[rune]rune) (string, error) {
     if len(text) <= 0 || len(key) <= 0 {return "", errors.New("given an empty string")}
 
@@ -151,6 +143,9 @@ func keymapProcess(text string, key map[rune]rune) (string, error) {
 }
 
 func MVPCEncrypt(plaintext string) (string, map[rune]rune, error) {
+    plaintext, err := stripnonalpha(plaintext)
+    if err != nil {return "", nil, err}
+
     var key map[rune]rune = make(map[rune]rune, 26)
 
     // Populate key
@@ -206,10 +201,12 @@ Here's the example in the book:
 */
 
 func ROTX(text string, offset rune) (string, error) {
-    if len(text) <= 0               {return "", errors.New("given empty string")}
-    if offset % rune(ROMANWIDTH) == 0    {return "", errors.New("given offset that would not meaningfully encrypt message (" + string(offset) + " % " + fmt.Sprintf("%d", ROMANWIDTH) + " == 0)")}
-    var res string
+    if len(text) <= 0                   {return "", errors.New("given empty string")}
+    if offset % rune(ROMANWIDTH) == 0   {return "", errors.New("given offset that would not meaningfully encrypt message (" + string(offset) + " % " + fmt.Sprintf("%d", ROMANWIDTH) + " == 0)")}
+    text, err := stripnonalpha(text)
+    if err != nil {return "", err}
 
+    var res string
 
     for ; offset < 0; offset += rune(ROMANWIDTH) {}
     for _, cur := range text {
@@ -252,6 +249,11 @@ plaintext letters accordingly. Here's the book's example:
 
 func keyphraseProcess(text, keyphrase string, mode bool) (string, error) {
     if len(text) <= 0 || len(keyphrase) <= 0 {return "", errors.New("given empty string")}
+    text, err := stripnonalpha(text)
+    if err != nil {return "", err}
+    keyphrase, err = stripnonalpha(keyphrase)
+    if err != nil {return "", err}
+
     var key map[rune]rune = make(map[rune]rune, 26)
     var set GSet[rune] = NewGSet[rune]()
 
@@ -277,11 +279,8 @@ func keyphraseProcess(text, keyphrase string, mode bool) (string, error) {
 
     // (Decryption) Invert the key map so that the current ABCD... -> XXXX... map becomes XXXX.... -> ABCD...
     if mode {
-        temp := make(map[rune]rune, 26)
-        for k, v := range key {
-            temp[v] = k
-        }
-        key = temp
+        key, err = invertmap(key)
+        if err != nil {return "", err}
     }
 
     // Process data
@@ -307,6 +306,8 @@ all it does is replace letters with their "opposites". A becomes Z, B becomes Y,
 
 func Atbash(text string) (string, error) {
     if len(text) <= 0 {return "", errors.New("given empty string")}
+    text, err := stripnonalpha(text)
+    if err != nil {return "", err}
     var res string
 
     for _, cur := range text {
