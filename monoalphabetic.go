@@ -23,7 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"slices"
 	"strings"
 )
@@ -164,7 +164,7 @@ func MVPCEncrypt(plaintext string) (string, map[rune]rune, error) {
     var lp [2]rune
     for ; len(letters) > 0; {
         for i, randi := 0, 0; i < 2; i++ {
-            randi = rand.Intn(len(letters))
+            randi = rand.IntN(len(letters))
             lp[i] = letters[randi]
             letters = slices.Delete(letters, randi, randi + 1)
         }
@@ -368,8 +368,8 @@ func HomophonicEncrypt(plaintext string, symbolrange int) (string, map[string]ru
 
         for i := 0; i < int(freq); i++ {
             // Get a new, unused symbol
-            symbol := fmt.Sprint(rand.Intn(symbolrange + 1))
-            for ; usedsymbols.check(symbol); symbol = fmt.Sprint(rand.Intn(symbolrange + 1)) {}
+            symbol := fmt.Sprint(rand.IntN(symbolrange + 1))
+            for ; usedsymbols.check(symbol); symbol = fmt.Sprint(rand.IntN(symbolrange + 1)) {}
 
             // Add symbol to keys and set
             internalkey[char] = append(internalkey[char], symbol)
@@ -385,13 +385,14 @@ func HomophonicEncrypt(plaintext string, symbolrange int) (string, map[string]ru
 
     for _, cur := range plaintext {
         psymbols := internalkey[cur]
-        choice := rand.Intn(len(psymbols))
+        choice := rand.IntN(len(psymbols))
         ciphertext += psymbols[choice] + " "
     }
     ciphertext = string(slices.Delete([]rune(ciphertext), len(ciphertext) - 1, len(ciphertext)))
 
     return ciphertext, key, nil
 }
+
 func HomophonicDecrypt(ciphertext string, key map[string]rune) (string, error) {
     if len(ciphertext) <= 0 {return "", errors.New("given empty string")} 
     if len(key) <= 0 {return "", errors.New("given empty map")} 
